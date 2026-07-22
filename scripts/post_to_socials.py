@@ -13,7 +13,7 @@ silently retry a broken post forever without a trace.
 import os
 import sys
 import shutil
-import mimetypes
+import urllib.parse
 from pathlib import Path
 
 import requests
@@ -53,27 +53,16 @@ def load_post(folder: Path):
     return caption, images
 
 
-def upload_to_wordpress(image_path: Path, wp_url: str, wp_user: str, wp_app_password: str) -> str:
-    """Uploads an image to the WordPress media library and returns its public URL.
+def build_raw_url(image_path: Path, repo: str, commit_sha: str) -> str:
+    """Builds a raw.githubusercontent.com URL for an image already pushed to the repo.
 
-    Needed because Instagram's Graph API requires a publicly reachable image_url
-    per carousel item; it cannot accept raw binary data.
+    Facebook/Instagram/LinkedIn all need a publicly reachable image URL; since this
+    repo is public, the just-pushed commit's raw content already qualifies - no
+    separate image hosting step needed.
     """
-    mime_type, _ = mimetypes.guess_type(image_path.name)
-    mime_type = mime_type or "application/octet-stream"
-
-    resp = requests.post(
-        f"{wp_url.rstrip('/')}/wp-json/wp/v2/media",
-        auth=(wp_user, wp_app_password),
-        headers={
-            "Content-Disposition": f'attachment; filename="{image_path.name}"',
-            "Content-Type": mime_type,
-        },
-        data=image_path.read_bytes(),
-        timeout=60,
-    )
-    resp.raise_for_status()
-    return resp.json()["source_url"]
+    relative_path = image_path.relative_to(REPO_ROOT).as_posix()
+    quoted_path = urllib.parse.quote(relative_path)
+    return f"https://raw.githubusercontent.com/{repo}/{commit_sha}/{quoted_path}"
 
 
 def post_facebook(image_urls, caption, page_id, page_token):
@@ -210,10 +199,8 @@ def post_linkedin(cover_image_url, caption, person_urn, access_token):
 def process_post(folder: Path, config) -> None:
     caption, image_paths = load_post(folder)
 
-    print(f"[{folder.name}] uploading {len(image_paths)} image(s) to WordPress ...")
     image_urls = [
-        upload_to_wordpress(p, config["wp_url"], config["wp_user"], config["wp_app_password"])
-        for p in image_paths
+        build_raw_url(p, config["github_repo"], config["commit_sha"]) for p in image_paths
     ]
 
     print(f"[{folder.name}] posting to Facebook ...")
@@ -240,9 +227,8 @@ def main() -> int:
         "ig_user_id": env("IG_USER_ID"),
         "linkedin_person_urn": env("LINKEDIN_PERSON_URN"),
         "linkedin_access_token": env("LINKEDIN_ACCESS_TOKEN"),
-        "wp_url": env("WP_SITE_URL"),
-        "wp_user": env("WP_USERNAME"),
-        "wp_app_password": env("WP_APP_PASSWORD"),
+        "github_repo": env("GITHUB_REPOSITORY"),
+        "commit_sha": env("GITHUB_SHA"),
     }
 
     if not PENDING_DIR.exists():

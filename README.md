@@ -29,9 +29,10 @@ Unter **Repo → Settings → Secrets and variables → Actions → New reposito
 | `IG_USER_ID` | `17841428461594051` (verknüpftes Instagram-Konto matthias.may.finanz) |
 | `LINKEDIN_PERSON_URN` | siehe unten, Format `urn:li:person:XXXXXXX` |
 | `LINKEDIN_ACCESS_TOKEN` | siehe unten |
-| `WP_SITE_URL` | z.B. `https://may-finanz.services` |
-| `WP_USERNAME` | dein WordPress-Login |
-| `WP_APP_PASSWORD` | siehe unten |
+
+Das Repo muss **Public** sein (Settings → General → Danger Zone → "Change visibility"), damit die
+Bild-URLs (`raw.githubusercontent.com/...`) von Facebook/Instagram/LinkedIn abgerufen werden können.
+Das ist unproblematisch, da die Bilder ohnehin für öffentliche Social-Media-Posts gedacht sind.
 
 ### Facebook Page Access Token (auch für Instagram genutzt)
 
@@ -49,12 +50,6 @@ Unter **Repo → Settings → Secrets and variables → Actions → New reposito
 3. Unter "Auth" die Redirect-URL `https://www.linkedin.com/developers/tools/oauth/redirect` eintragen (LinkedIns eigenes Test-Tool)
 4. Im "OAuth 2.0 tools"-Tab einen dreistufigen Login mit Scope `w_member_social` durchführen → liefert einen Access Token (60 Tage gültig, danach muss dieser Schritt wiederholt werden)
 5. Die eigene Person-URN herausfinden: `GET https://api.linkedin.com/v2/userinfo` mit dem Token im `Authorization: Bearer ...`-Header → Feld `sub` ist deine Member-ID → `urn:li:person:<sub>`
-
-### WordPress Application Password
-
-1. In WordPress einloggen → **Benutzer → Profil**
-2. Ganz unten: **"Anwendungspasswörter"** → Namen vergeben (z.B. "Social Media Poster") → **"Neues Anwendungspasswort hinzufügen"**
-3. Das angezeigte Passwort (mit Leerzeichen, genau so übernehmen) als `WP_APP_PASSWORD` speichern
 
 ## Wartung
 
